@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambiador de Color de Fondo</title>
+    <!-- Carga de Tailwind CSS para un estilo rápido y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Transición de 3 segundos para el color de fondo, lo hace muy smooth */
+        body {
+            transition: background-color 3s ease-in-out; 
+        }
+
+        /* ------------------------------------- */
+        /* Transición Lenta para el Círculo (Igual que el Body: 3s) */
+        /* ------------------------------------- */
+        #colorIndicator {
+            /* Solo aplicamos la transición lenta al color de fondo */
+            transition: background-color 3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        /* ------------------------------------- */
+        /* Animación de Pulso (Visualmente Atractiva) */
+        /* ------------------------------------- */
+        @keyframes pulse-once {
+            /* Inicia normal, con una sombra de luz sutil (simulando un glow) */
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+            /* Se agranda y el brillo se intensifica */
+            50% { transform: scale(1.15); box-shadow: 0 0 16px 8px rgba(255, 255, 255, 0.4); }
+            /* Vuelve a la normalidad */
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
+        .animate-pulse-once {
+            /* La animación de pulso es de 1.5s */
+            animation: pulse-once 1.5s ease-out;
+        }
+
+        /* ------------------------------------- */
+        /* Animación de Salto Sutil al pasar el cursor */
+        /* ------------------------------------- */
+        @keyframes bounce-hover {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); } /* Sube 4px */
+        }
+
+        #colorIndicator:hover {
+            animation: bounce-hover 0.3s ease-in-out;
+        }
+        
+        /* ------------------------------------- */
+        /* Animación de Ola (Ripple Effect) */
+        /* ------------------------------------- */
+        #colorButton {
+            /* Necesario para posicionar la ola correctamente */
+            position: relative; 
+            overflow: hidden;
+        }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.7); /* Ola blanca sutil */
+        }
+
+        @keyframes ripple-effect {
+            to {
+                transform: scale(4); 
+                opacity: 0; 
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gray-900 font-sans">
+
+    <!-- Recuadro principal con efecto "Vidrio Líquido" (Liquid Glass) -->
+    <div id="central-box" 
+         class="text-center 
+                max-w-lg w-11/12 
+                p-12 md:p-16 
+                rounded-[32px] shadow-2xl shadow-gray-900/50 
+                bg-white/20 backdrop-blur-xl 
+                border border-white/40 shadow-inner 
+                transition duration-500">
+        
+        <!-- Título principal (sin el contenedor de vidrio extra) -->
+        <h1 id="mainTitle" class="text-4xl font-bold text-gray-900 mb-16 tracking-tight">
+            Cambiador de Color
+        </h1>
+
+        <!-- Botón de acción (Contiene la Ola) -->
+        <button id="colorButton"
+                class="w-80 py-4 px-8 bg-gray-900 text-white text-xl font-medium rounded-full shadow-lg 
+                       focus:outline-none focus:ring-4 focus:ring-white/50 transition duration-150 ease-in-out 
+                       hover:bg-gray-700 active:scale-[0.98]">
+            Generar Nuevo Fondo
+        </button>
+    </div>
+
+    <!-- Círculo Indicador de Color con Contorno Negro y Animación al pasar el cursor -->
+    <div id="colorIndicator" 
+         class="mt-8 w-12 h-12 rounded-full shadow-xl 
+                border-2 border-gray-900"> 
+        <!-- La transición de 3s se define en el bloque <style> -->
+    </div>
+
+    <script>
+        // Accedemos a los elementos del DOM
+        const body = document.body;
+        const colorButton = document.getElementById('colorButton');
+        const colorIndicator = document.getElementById('colorIndicator'); 
+
+        /**
+         * Función para generar un color hexadecimal aleatorio.
+         * @returns {string} El código de color hexadecimal.
+         */
+        function getRandomColor() {
+            // Genera un número entero aleatorio y lo convierte a hexadecimal
+            const randomColor = Math.floor(Math.random() * 16777215).toString(16);
+            // Asegura que el string tenga 6 dígitos
+            return `#${randomColor.padStart(6, '0').toUpperCase()}`;
+        }
+
+        /**
+         * Crea el efecto de ola (ripple effect) al hacer clic en el botón.
+         */
+        function createRipple(event) {
+            const button = event.currentTarget;
+            
+            // Crea el elemento <span> para la ola
+            const circle = document.createElement('span');
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+            
+            // Posiciona el centro de la ola en el punto del clic
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+            circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+            
+            circle.classList.add('ripple');
+            
+            // Asegura que no haya otras olas activas y adjunta la nueva
+            const oldRipple = button.querySelector('.ripple');
+            if (oldRipple) {
+                oldRipple.remove();
+            }
+            
+            button.appendChild(circle);
+
+            // Elimina el elemento de la ola después de la animación
+            circle.addEventListener('animationend', () => {
+                circle.remove();
+            });
+        }
+
+        /**
+         * Manejador de eventos que cambia el color del fondo y anima el indicador.
+         */
+        function changeBackgroundColor() {
+            const newColor = getRandomColor();
+            
+            // 1. Aplicamos el nuevo color al fondo del body (transición de 3s en CSS)
+            body.style.backgroundColor = newColor;
+
+            // 2. Aplicamos el nuevo color al indicador (con transición de 3s)
+            colorIndicator.style.backgroundColor = newColor;
+
+            // 3. Activamos la animación de "Pulso" para atraer la vista.
+            colorIndicator.classList.remove('animate-pulse-once'); 
+            void colorIndicator.offsetWidth; // Forzamos reflow
+            colorIndicator.classList.add('animate-pulse-once');
+        }
+
+        // Configuramos el escuchador de eventos para el botón
+        colorButton.addEventListener('click', (event) => {
+            createRipple(event); // Agregamos el efecto visual de ola
+            changeBackgroundColor(); // Y cambiamos el color de fondo
+        });
+        
+        // Ejecutamos la función una vez al cargar
+        window.onload = function() {
+            // Establecemos un color inicial para el cuerpo y el indicador
+            const initialColor = '#FFFFFF'; // ¡Ahora es Blanco!
+            body.style.backgroundColor = initialColor; 
+            colorIndicator.style.backgroundColor = initialColor; 
+        }
+
+    </script>
+</body>
+</html>
